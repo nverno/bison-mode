@@ -151,7 +151,7 @@ key's electric variable")
     (cons (concat "^\\(" (regexp-opt bison--declarers) "\\)")
 	  '(1 font-lock-keyword-face))
     )
-   c-font-lock-keywords)
+   c++-font-lock-keywords)
   "Default expressions to highlight in Bison mode")
 
 ;; *************** utilities ***************
@@ -200,21 +200,21 @@ and \(point\)"
 ;; *************** bison-mode ***************
 
 ;;;###autoload
-(define-derived-mode bison-mode c-mode "Bison"
+(define-derived-mode bison-mode c++-mode "Bison"
   "Major mode for editing bison/yacc files."
 
   ;; try to set the indentation correctly
   (setq c-basic-offset 4)
 
   (c-set-offset 'knr-argdecl-intro 0)
-  
+
   ;; remove auto and hungry anything
   (c-toggle-auto-hungry-state -1)
   (c-toggle-auto-newline -1)
   (c-toggle-hungry-state -1)
 
   (use-local-map bison-mode-map)
-  
+
   (define-key bison-mode-map ":" 'bison-electric-colon)
   (define-key bison-mode-map "|" 'bison-electric-pipe)
   (define-key bison-mode-map "{" 'bison-electric-open-brace)
@@ -225,7 +225,7 @@ and \(point\)"
   (define-key bison-mode-map ">" 'bison-electric-greater-than)
 
   (define-key bison-mode-map [tab] 'bison-indent-line)
-  
+
   (make-local-variable 'indent-line-function)
   (setq indent-line-function 'bison-indent-new-line)
   (make-local-variable 'comment-start)
@@ -298,7 +298,7 @@ and \(point\)"
 (defun bison--find-production-opener ()
   "return and goto the point of the nearest production opener above \(point\)"
   (re-search-backward bison--production-re nil t))
-  
+
 
 (defun bison--find-next-production ()
   "return the position of the beginning of the next production,
@@ -371,7 +371,7 @@ ENDER"
   "return t if the point is within a c comment delimited by \"/*\" \"*/\""
   (bison--within-some-sexp-p (regexp-quote comment-start)
 			     (regexp-quote comment-end)))
-	   
+
 
 (defun bison--within-string-p (&optional point)
   "
@@ -386,7 +386,7 @@ found."
 	(setq in-p (not in-p)))
 
       in-p)))
-       
+
 ;;; bison--within-braced-c-expression-p
 ;;; new and improved, no more recursion, does not break when literal strings
 ;;; contain un-matched braces
@@ -433,12 +433,12 @@ save excursion is done higher up, so i dont concern myself here.
 	(goto-char (match-end 0))
 	(if (or (bison--within-c-comment-p)
 		(bison--within-string-p))
-	    
+
 	    (setq count (+ count 1))
 	  (progn
 	    (setq success t)
 	    (setq done t))))
-      
+
       (if success
 	  (let ((end-pt
 		 (condition-case nil
@@ -574,7 +574,7 @@ assumes indenting a new line, i.e. at column 0
 (defun bison-indent-line ()
   "Indent a line of bison code."
   (interactive)
-  
+
   (let* ((pos (- (point-max) (point)))
 	 (reset-pt (function (lambda ()
 			       (if (> (- (point-max) pos) (point))
@@ -590,11 +590,11 @@ assumes indenting a new line, i.e. at column 0
        ;; if you are a line of whitespace, let indent-new-line take care of it
        (ws-line
 	(bison-indent-new-line c-sexp))
-       
+
        ((= section bison--pre-c-decls-section)
 	;; leave things alone
 	)
-       
+
        ((= section bison--c-decls-section)
 	(if c-sexp
 	    (bison--handle-indent-c-sexp section 0 bol)
@@ -603,7 +603,7 @@ assumes indenting a new line, i.e. at column 0
 		(back-to-indentation)
 		(just-no-space)
 		(funcall reset-pt)))))
-       
+
        ((= section bison--bison-decls-section)
 	(let ((opener (bison--bison-decl-opener-p bol eol)))
 	  (cond
@@ -729,7 +729,7 @@ assumes indenting a new line, i.e. at column 0
        ((= section bison--c-code-section)
 	(c-indent-line))
        ))))
-  
+
 ;; *************** electric-functions ***************
 
 (defun bison-electric-colon (arg)
@@ -785,7 +785,7 @@ a word(alphanumerics or '_''s), and there is no previous white space.
 	(indent-to-column bison-rule-enumeration-column)
 	)
     (self-insert-command (prefix-numeric-value arg))))
-	
+
 (defun bison-electric-open-brace (arg)
   "used for the opening brace of a C action definition for production rules,
 if there is only whitespace before \(point\), then put open-brace in
@@ -811,8 +811,8 @@ bison-rule-enumeration-column"
 		     (indent-to-column 0)))))))
 
   (self-insert-command (prefix-numeric-value arg)))
-    
-  
+
+
 (defun bison-electric-close-brace (arg)
   "If the close-brace \"}\" is used as the c-declarations section closer
 in \"%}\", then make sure the \"%}\" indents to the beginning of the line"
@@ -857,7 +857,7 @@ then put it in the 0 column."
 		 (not (previous-non-ws-p))
 		 (not (= (current-column) 0)))
 	    (just-no-space))))
-  
+
   (self-insert-command (prefix-numeric-value arg)))
 
 (defun bison-electric-less-than (arg)
@@ -874,7 +874,7 @@ declaration section, then put it in the bison-decl-type-column column."
 	  (progn
 	    (just-no-space)
 	    (indent-to-column bison-decl-type-column))))
-  
+
   (self-insert-command (prefix-numeric-value arg)))
 
 (defun bison-electric-greater-than (arg)
