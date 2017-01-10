@@ -83,9 +83,26 @@
 
 ;; *************** internal vars ***************
 
-(defvar bison--declarers '("%union" "%token" "%type"
+(defconst bison--declarers '("%union" "%token" "%type"
 			   "%left" "%right" "%nonassoc")
-  "commands which can declare a token or state type")
+  "commands that can declare a token or state type")
+
+(defconst bison--directives
+  '("%code"
+    "%debug" "%define" "%defines" "%destructor" "%dprec"
+    "%empty" "%error-verbose"
+    "%file-prefix"
+    "%glr-parser"
+    "%initial-action"
+    "%language" "%locations" "%lex-param"
+    "%no-lines"
+    "%output"
+    "%param" "%parse-param" "%prec" "%precedence" "%pure-parser"
+    "%require"
+    "%skeleton" "%start"
+    "%token-table"
+    )
+  "Bison directives, except of those in bison--declarers")
 
 (defvar bison--word-constituent-re "\\(\\sw\\|_\\)")
 (defvar bison--production-re
@@ -148,7 +165,7 @@ key's electric variable")
 (defconst bison-font-lock-keywords
   (append
    (list
-    (cons (concat "^\\(" (regexp-opt bison--declarers) "\\)")
+    (cons (concat "^\\(" (regexp-opt (append bison--declarers bison--directives)) "\\)")
 	  '(1 font-lock-keyword-face))
     )
    c++-font-lock-keywords)
