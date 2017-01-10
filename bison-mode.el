@@ -161,11 +161,14 @@
   :type  'integer
   :group 'bison)
 
+;;;###autoload
+(defcustom bison-all-electricity-off nil
+  "*Disable all bison-mode electric keys,
 
-(defvar bison-all-electricity-off nil
-  "non-nil means all electric keys will be disabled,
 nil means that a bison-electric-* key will be on or off based on the individual
-key's electric variable")
+key's electric variable."
+  :type  'boolean
+  :group 'bison)
 
 ;;; i know lisp has the dual name spaces, but i find it more aesthetically
 ;;; pleasing to not take advantage of that
