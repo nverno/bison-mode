@@ -39,7 +39,7 @@
 ;;;; C declarations section.     most everything in this file either does
 ;;;; actions based on which section you are deemed to be in, or based on an
 ;;;; assumption that the function will only be called from certain sections.
-;;;; the function `bison--section-p' is the section parser
+;;;; the function `bison--section' is the section parser
 
 ;;;; Indentation:
 ;;;; indentations are done based on the section of code you are in.    there is
@@ -284,14 +284,14 @@ and \(point\)"
 
 ;; *************** section parsers ***************
 
-(defun bison--section-p ()
+(defun bison--section ()
   "Return the section that user is currently in"
   (save-excursion
     (let ((bound (point)))
       (goto-char (point-min))
-      (bison--section-p-helper bound))))
+      (bison--section-helper bound))))
 
-(defun bison--section-p-helper (bound)
+(defun bison--section-helper (bound)
   (if (re-search-forward
        (concat "^" bison--c-decls-section-opener)
        bound t)
@@ -518,7 +518,7 @@ save excursion is done higher up, so i dont concern myself here.
   "return the position of next semicolon not within braces, nil otherwise"
   (save-excursion
     (if (search-forward ";" nil t)
-	(if (not (bison--within-braced-c-expression-p (bison--section-p)))
+	(if (not (bison--within-braced-c-expression-p (bison--section)))
 	    (point)
 	  (bison--find-bison-semicolon))
       nil)))
@@ -574,7 +574,7 @@ assumes indenting a new line, i.e. at column 0
 "
   (interactive)
 
-  (let* ((section (bison--section-p))
+  (let* ((section (bison--section))
 	 (c-sexp (or c-sexp (bison--within-braced-c-expression-p section)))
 	 )
     (cond
@@ -627,7 +627,7 @@ assumes indenting a new line, i.e. at column 0
 	 (bol (save-excursion (beginning-of-line) (point)))
 	 (eol (save-excursion (end-of-line) (point)))
 	 )
-    (let* ((section (bison--section-p))
+    (let* ((section (bison--section))
 	   (c-sexp (bison--within-braced-c-expression-p section))
 	   (ws-line (line-of-whitespace-p))
 	   )
@@ -791,7 +791,7 @@ a word(alphanumerics or '_''s), and there is no previous white space.
   (self-insert-command (prefix-numeric-value arg))
   (if (and bison-electric-colon-v
 	   (not bison-all-electricity-off))
-      (if (and (= bison--grammar-rules-section (bison--section-p))
+      (if (and (= bison--grammar-rules-section (bison--section))
 	       (bison--production-p)
 	       (not (bison--within-started-production-p)))
 	  (progn
@@ -819,7 +819,7 @@ a word(alphanumerics or '_''s), and there is no previous white space.
 
   (if (and bison-electric-pipe-v
 	   (not bison-all-electricity-off)
-	   (= bison--grammar-rules-section (bison--section-p))
+	   (= bison--grammar-rules-section (bison--section))
 	   (line-of-whitespace-p)
 	   )
       (progn
@@ -839,7 +839,7 @@ bison-rule-enumeration-column"
 
   (if (and bison-electric-open-brace-v
 	   (not bison-all-electricity-off))
-      (let ((section (bison--section-p)))
+      (let ((section (bison--section)))
 	(cond ((and (= section bison--grammar-rules-section)
 		    (not (bison--within-braced-c-expression-p section))
 		    (not (previous-non-ws-p)))
@@ -868,7 +868,7 @@ in \"%}\", then make sure the \"%}\" indents to the beginning of the line"
   (if (and bison-electric-close-brace-v
 	   (not bison-all-electricity-off))
       (cond ((search-backward "%}" (- (point) 2) t)
-	     (if (= (bison--section-p) bison--c-decls-section)
+	     (if (= (bison--section) bison--c-decls-section)
 		 (progn
 		   (just-no-space)
 		   (forward-char 2))	; for "%}"
@@ -896,7 +896,7 @@ then put it in the 0 column."
 
   (if (and bison-electric-percent-v
 	   (not bison-all-electricity-off))
-      (let ((section (bison--section-p)))
+      (let ((section (bison--section)))
 	(if (and (= section bison--bison-decls-section)
 		 (not (bison--within-braced-c-expression-p section))
 		 (not (previous-non-ws-p))
@@ -912,7 +912,7 @@ declaration section, then put it in the bison-decl-type-column column."
 
   (if (and bison-electric-less-than-v
 	   (not bison-all-electricity-off))
-      (if (and (= (bison--section-p) bison--bison-decls-section)
+      (if (and (= (bison--section) bison--bison-decls-section)
 	       (bison--bison-decl-opener-p
 		(save-excursion (beginning-of-line) (point))
 		(point)))
@@ -933,7 +933,7 @@ declaration section, then indent to bison-decl-token-column."
 	   (not bison-all-electricity-off))
       (let ((current-pt (point))
 	    (bol (save-excursion (beginning-of-line) (point))))
-	(if (and (= (bison--section-p) bison--bison-decls-section)
+	(if (and (= (bison--section) bison--bison-decls-section)
 		 (bison--bison-decl-opener-p bol (point)))
 	    (if (search-backward "<" bol t)
 		(if (re-search-forward
