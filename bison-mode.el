@@ -123,17 +123,43 @@
 (defconst bison--c-decls-section-closer "%}")
 (defconst bison--grammar-rules-section-delimeter "%%")
 
-;; *************** user-definable vars ***************
+; Custom variables
 
-(defvar bison-rule-separator-column 8
-  "column for rule and production separators \"|\" and \";\"")
-(defvar bison-rule-enumeration-column 16
-  "column for beginning enumeration of a production's rules")
-(defvar bison-decl-type-column 8
-  "columnn in which tokens' and states' types should be when declared")
-(defvar bison-decl-token-column 24
-  "column in which tokens and states are listed when declared,
-as with %token, %type, ...")
+;;;###autoload
+(defgroup bison nil
+  "Major mode for editing Bison and Yacc files."
+  :prefix "bison-"
+  :group 'languages)
+
+;;;###autoload
+(defcustom bison-mode-hook nil
+    "*Hook called by `bison-mode'."
+    :type  'hook
+    :group 'bison)
+
+;;;###autoload
+(defcustom bison-rule-separator-column 8
+  "*Column for rule and production separators \"|\" and \";\"."
+  :type  'integer
+  :group 'bison)
+
+;;;###autoload
+(defcustom bison-rule-enumeration-column 16
+  "*Column  for beginning enumeration of a production's rules."
+  :type  'integer
+  :group 'bison)
+
+;;;###autoload
+(defcustom bison-decl-type-column 8
+  "*Column  in which tokens' and states' types should be when declared."
+  :type  'integer
+  :group 'bison)
+
+;;;###autoload
+(defcustom bison-decl-token-column 24
+  "*Column in which tokens and states are listed when declared, as with %token, %type, ..."
+  :type  'integer
+  :group 'bison)
 
 
 (defvar bison-all-electricity-off nil
