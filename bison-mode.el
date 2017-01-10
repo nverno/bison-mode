@@ -104,25 +104,24 @@
     )
   "Bison directives, except of those in bison--declarers")
 
-(defvar bison--word-constituent-re "\\(\\sw\\|_\\)")
-(defvar bison--production-re
+(defconst bison--word-constituent-re "\\(\\sw\\|_\\)")
+(defconst bison--production-re
   (concat "^" bison--word-constituent-re "+:"))
 
-(defvar bison--pre-c-decls-section 0
+(defconst bison--pre-c-decls-section 0
   "section before c-declarations-section, if that section exists")
-(defvar bison--c-decls-section 1
+(defconst bison--c-decls-section 1
   "section denoted by %{ and $} for c-declarations at the top of a bison file")
-(defvar bison--bison-decls-section 2
+(defconst bison--bison-decls-section 2
   "section before the rules section")
-(defvar bison--grammar-rules-section 3
+(defconst bison--grammar-rules-section 3
   "section delimited by %%'s where productions and rules are enumerated")
-(defvar bison--c-code-section 4
+(defconst bison--c-code-section 4
   "section after the second %% where c-code can be placed")
 
-(defvar bison--c-decls-section-opener "%{")
-(defvar bison--c-decls-section-closer "%}")
-(defvar bison--grammar-rules-section-delimeter "%%")
-
+(defconst bison--c-decls-section-opener "%{")
+(defconst bison--c-decls-section-closer "%}")
+(defconst bison--grammar-rules-section-delimeter "%%")
 
 ;; *************** user-definable vars ***************
 
