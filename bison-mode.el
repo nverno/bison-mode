@@ -90,7 +90,7 @@
 (defconst bison--directives
   '("%code"
     "%debug" "%define" "%defines" "%destructor" "%dprec"
-    "%empty" "%error-verbose"
+    "%error-verbose"
     "%file-prefix"
     "%glr-parser"
     "%initial-action"
@@ -100,8 +100,8 @@
     "%param" "%parse-param" "%prec" "%precedence" "%pure-parser"
     "%require"
     "%skeleton" "%start"
-    "%token-table"
-    )
+    "%token-table")
+
   "Bison directives, except of those in ‘bison--declarers’.")
 
 (defconst bison--word-constituent-re "\\(\\sw\\|_\\)")
@@ -118,9 +118,12 @@
 (defconst bison--c-code-section 4
   "Section after the second %% where c-code can be placed.")
 
-(defconst bison--c-decls-section-opener "%{")
-(defconst bison--c-decls-section-closer "%}")
-(defconst bison--grammar-rules-section-delimeter "%%")
+(defconst bison--c-decls-section-opener "^%\\(?:code\\(?:[[:space:]]+[[:ascii:]]+\\)[[:space:]]*\\){"
+  "Regular expression denoting start of C/C++ code sections.")
+(defconst bison--c-decls-section-closer "^%}"
+  "Regular expression denoting end of C/C++ code sections.")
+(defconst bison--grammar-rules-section-delimeter "^%%"
+  "Regular expression denoting start and end of bison grammar rules section.")
 
 ; Custom variables
 
@@ -212,25 +215,21 @@ key's electric variable."
   (save-excursion
     (let ((current-point (point)))
       (beginning-of-line)
-      (if (re-search-forward "\\s " current-point t)
-	  t
-	nil))))
+      (re-search-forward "\\s " current-point t))))
 
 (defun previous-non-ws-p ()
   "Return t if there are non-whitespace characters between beginning of line and \(point\)."
   (save-excursion
     (let ((current-point (point)))
       (beginning-of-line)
-    (re-search-forward "[^ \t]" current-point t)
-    )))
+      (re-search-forward "[^ \t]" current-point t))))
 
 (defun following-non-ws-p ()
   "Return t if there are non-whitespace characters on the line."
   (save-excursion
     (let ((current-point (point)))
       (end-of-line)
-      (re-search-backward "[^ \t]+" current-point t)
-      )))
+      (re-search-backward "[^ \t]+" current-point t))))
 
 (defun line-of-whitespace-p ()
   "Return t if the line consists of nothiing but whitespace, nil otherwise."
@@ -289,37 +288,21 @@ key's electric variable."
       (bison--section-helper bound))))
 
 (defun bison--section-helper (bound)
-  (if (re-search-forward
-       (concat "^" bison--c-decls-section-opener)
-       bound t)
-      (if (re-search-forward
-		(concat "^" bison--c-decls-section-closer)
-		bound t)
-	  (if (re-search-forward
-	       (concat "^" bison--grammar-rules-section-delimeter)
-	       bound t)
-	      (if (re-search-forward
-		   (concat "^" bison--grammar-rules-section-delimeter)
-		   bound t)
+  (if (re-search-forward bison--c-decls-section-opener bound t)
+      (if (re-search-forward bison--c-decls-section-closer bound t)
+	  (if (re-search-forward bison--grammar-rules-section-delimeter bound t)
+	      (if (re-search-forward bison--grammar-rules-section-delimeter bound t)
 		  bison--c-code-section
 		bison--grammar-rules-section)
 	    bison--bison-decls-section)
 	bison--c-decls-section)
-    (if (re-search-forward
-	    (concat "^" bison--grammar-rules-section-delimeter)
-	    bound t)
-	(if (re-search-forward
-	     (concat "^" bison--grammar-rules-section-delimeter)
-	     bound t)
+    (if (re-search-forward bison--grammar-rules-section-delimeter bound t)
+	(if (re-search-forward bison--grammar-rules-section-delimeter bound t)
 	    bison--c-code-section
 	  bison--grammar-rules-section)
-      (if (re-search-forward
-	   (concat "^" bison--c-decls-section-opener)
-	   nil t)
+      (if (re-search-forward bison--c-decls-section-opener nil t)
 	  bison--pre-c-decls-section
-	(if (re-search-forward
-	     (concat "^" bison--grammar-rules-section-delimeter)
-	     nil t)
+	(if (re-search-forward bison--grammar-rules-section-delimeter nil t)
 	    bison--bison-decls-section
 	  bison--pre-c-decls-section)))))
 
@@ -354,22 +337,16 @@ key's electric variable."
 (defun bison--find-grammar-end ()
   "Return the position of the end of the grammar rules (assuming we are within the grammar rules section), or nil if there isnt one."
   (save-excursion
-    (if (re-search-forward
-	 (concat "^" bison--grammar-rules-section-delimeter)
-	 nil t)
+    (if (re-search-forward bison--grammar-rules-section-delimeter nil t)
 	(progn
 	  (beginning-of-line)
-	  (point))
-      nil)))
+	  (point)))))
 
 (defun bison--find-grammar-begin ()
   "Return the position of the beginning of the grammar rules (assuming we are within the grammar rules section), or nil if there isnt one."
   (save-excursion
-    (if (re-search-backward
-	 (concat "^" bison--grammar-rules-section-delimeter)
-	 nil t)
-	(point)
-      nil)))
+    (if (re-search-backward bison--grammar-rules-section-delimeter nil t)
+	(point))))
 
 (defun bison--within-started-production-p ()
   "Used by bison-electric-* functions to determine actions.
