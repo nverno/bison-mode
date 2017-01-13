@@ -306,23 +306,19 @@ key's electric variable."
   "Return and goto the point of the nearest production opener above \(point\)."
   (re-search-backward bison--production-re nil t))
 
+(defun bison--find-point (re)
+  (save-excursion
+    (when (re-search-forward re nil t)
+	  (beginning-of-line)
+	  (point))))
 
 (defun bison--find-next-production ()
   "Return the position of the beginning of the next production, or nil if there isnt one."
-  (save-excursion
-    (if (re-search-forward bison--production-re nil t)
-	(progn
-	  (beginning-of-line)
-	  (point))
-      nil)))
+  (bison--find-point bison--production-re))
 
 (defun bison--find-grammar-end ()
   "Return the position of the end of the grammar rules (assuming we are within the grammar rules section), or nil if there isnt one."
-  (save-excursion
-    (if (re-search-forward bison--grammar-rules-section-delimeter nil t)
-	(progn
-	  (beginning-of-line)
-	  (point)))))
+  (bison--find-point bison--grammar-rules-section-delimeter))
 
 (defun bison--find-grammar-begin ()
   "Return the position of the beginning of the grammar rules (assuming we are within the grammar rules section), or nil if there isnt one."
@@ -469,31 +465,24 @@ save excursion is done higher up, so i dont concern myself here.
       nil)))
 
 (defun bison--within-production-body-p (section)
-  "return t if the \(point\) is within the body of a production
-
+  "Return t if the \(point\) is within the body of a production.
 This procedure will fail if it is in a production header."
   (save-excursion
-    (if (eq section :grammar-rules-section)
-	(let ((current-point (point)))
-	  (if (re-search-backward bison--production-re nil t)
-	      t
-	    nil))
-      nil)))
+    (and (eq section :grammar-rules-section)
+         (re-search-backward bison--production-re nil t)
+         t)))
 
 (defun bison--production-alternative-p (bol eol section)
-  "return t if the current line contains a \"|\" used to designate a rule alternative"
+  "Return t if the current line contains a \"|\" used to designate a rule alternative."
   (save-excursion
     (goto-char bol)
-    (if (search-forward "|" eol t)
-	(not (bison--within-braced-c-expression-p section))
-      nil)))
-
+    (and (search-forward "|" eol t)
+         (not (bison--within-braced-c-expression-p section))))
 
 ;; *************** indent functions ***************
 
 (defun bison--handle-indent-c-sexp (section indent-column bol)
-  (let* ((o-brace (re-search-backward "[^%]{" bol t))
-	 )
+  (let* ((o-brace (re-search-backward "[^%]{" bol t)))
     (if o-brace
 	(if (save-excursion
 	      (goto-char o-brace)
@@ -512,15 +501,13 @@ This procedure will fail if it is in a production header."
       (c-indent-line))))
 
 (defun bison-indent-new-line (&optional c-sexp)
-  "Indent a fresh line of bison code
-
+  "Indent a fresh line of bison code.
 Assumes indenting a new line, i.e. at column 0.
 "
   (interactive)
 
   (let* ((section (bison--section))
-	 (c-sexp (or c-sexp (bison--within-braced-c-expression-p section)))
-	 )
+	 (c-sexp (or c-sexp (bison--within-braced-c-expression-p section))))
     (cond
      (c-sexp
       (cond
@@ -569,12 +556,11 @@ Assumes indenting a new line, i.e. at column 0.
 			       (if (> (- (point-max) pos) (point))
 				   (goto-char (- (point-max) pos))))))
 	 (bol (save-excursion (beginning-of-line) (point)))
-	 (eol (save-excursion (end-of-line) (point)))
-	 )
+	 (eol (save-excursion (end-of-line) (point))))
+
     (let* ((section (bison--section))
 	   (c-sexp (bison--within-braced-c-expression-p section))
-	   (ws-line (line-of-whitespace-p))
-	   )
+	   (ws-line (line-of-whitespace-p)))
       (cond
        ;; if you are a line of whitespace, let indent-new-line take care of it
        (ws-line
@@ -722,11 +708,12 @@ Assumes indenting a new line, i.e. at column 0.
 ;; *************** electric-functions ***************
 
 (defun bison-electric-colon (arg)
-  "If the colon <:> delineates a production,
-   then insert a semicolon on the next line in the BISON-RULE-SEPARATOR-COLUMN,
-	put the cursor in the BISON-RULE-ENUMERATION-COLUMN for the beginning
-	of the rule
-   else just run self-insert-command
+  "Insert a colon character.
+If the colon <:> delineates a production,
+then insert a semicolon on the next line in the BISON-RULE-SEPARATOR-COLUMN,
+    put the cursor in the BISON-RULE-ENUMERATION-COLUMN for the beginning
+    of the rule
+else just run self-insert-command
 A colon delineates a production by the fact that it is immediately preceded by
 a word(alphanumerics or '_''s), and there is no previous white space.
 "
@@ -754,10 +741,11 @@ a word(alphanumerics or '_''s), and there is no previous white space.
 	    (indent-to-column bison-rule-enumeration-column)))))
 
 (defun bison-electric-pipe (arg)
-  "If the pipe <|> is used as a rule separator within a production,
-   then move it into BISON-RULE-SEPARATOR-COLUMN
-	indent to BISON-RULE-ENUMERATION-COLUMN on the same line
-   else just run self-insert-command
+  "Insert a \"|\" character.
+If the pipe <|> is used as a rule separator within a production,
+then move it into BISON-RULE-SEPARATOR-COLUMN
+    indent to BISON-RULE-ENUMERATION-COLUMN on the same line
+else just run self-insert-command
 "
   (interactive "P")
 
@@ -775,9 +763,10 @@ a word(alphanumerics or '_''s), and there is no previous white space.
     (self-insert-command (prefix-numeric-value arg))))
 
 (defun bison-electric-open-brace (arg)
-  "used for the opening brace of a C action definition for production rules,
+  "Insert and opening brace \"{\".
+When the brace opens a C action definition for production rules,
 if there is only whitespace before \(point\), then put open-brace in
-bison-rule-enumeration-column"
+bison-rule-enumeration-column."
   (interactive "P")
 
   (if (and bison-electric-open-brace-v
