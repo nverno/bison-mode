@@ -485,8 +485,8 @@ This procedure will fail if it is in a production header."
   "Return t if the current line contains a \"|\" used to designate a rule alternative."
   (save-excursion
     (goto-char bol)
-    (and (search-forward "|" eol t)
-         (not (bison--within-braced-c-expression-p section))))
+    (and (re-search-forward "|\\|\\(?:^\\s-*;\\s-*$\\)" eol t)
+         (not (bison--within-braced-c-expression-p section)))))
 
 ;; *************** indent functions ***************
 
