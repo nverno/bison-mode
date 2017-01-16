@@ -81,48 +81,13 @@
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.jison\\'" . jison-mode))
 
-;; *************** internal vars ***************
-
-(defconst bison--declarers '("%union" "%token" "%type"
-			   "%left" "%right" "%nonassoc")
-  "Commands that can declare a token or state type.")
-
-(defconst bison--directives
-  '("%code"
-    "%debug" "%define" "%defines" "%destructor" "%dprec"
-    "%error-verbose"
-    "%file-prefix"
-    "%glr-parser"
-    "%initial-action"
-    "%language" "%locations" "%lex-param"
-    "%no-lines"
-    "%output"
-    "%param" "%parse-param" "%prec" "%precedence" "%pure-parser"
-    "%require"
-    "%skeleton" "%start"
-    "%token-table")
-
-  "Bison directives, except of those in ‘bison--declarers’.")
-
 ;;;  Symbols to designate various sections of Bison file.
 ;;
-;; :init-section            Section before cdecl-section, if that section exists.
-;; :c-decls-section         Section denoted by %{ and %} for c-declarations at the top of a bison file.
-;; :bison-decls-section     Bison declarations (before the rules section and not C declarations).
-;; :grammar-rules-section   Section delimited by %%'s where productions and rules are enumerated.
-;; :c-code-section          Section after the second %% where c-code can be placed.
-
-;;;  Lexical regexps
-
-(defconst bison--word-constituent-re "\\(\\sw\\|_\\)")
-(defconst bison--production-re  (concat "^" bison--word-constituent-re "+:"))
-
-(defconst bison--c-decls-section-opener "^%\\(?:code\\(?:[[:space:]]+[[:ascii:]]+\\)[[:space:]]*\\){"
-  "Regular expression denoting start of C/C++ code sections.")
-(defconst bison--c-decls-section-closer "^%}"
-  "Regular expression denoting end of C/C++ code sections.")
-(defconst bison--grammar-rules-section-delimeter "^%%"
-  "Regular expression denoting start and end of bison grammar rules section.")
+;; :init-section        Section before cdecl-section, if that section exists.
+;; :c-decls-section     Section denoted by %{ and %} for c-declarations at the top of a bison file.
+;; :bison-decls-section Bison declarations (before the rules section and not C declarations).
+;; :rules-section       Section delimited by %%'s where productions and rules are enumerated.
+;; :c-code-section      Section after the second %% where c-code can be placed.
 
 ;;;  Custom variables
 
@@ -171,6 +136,57 @@ key's electric variable."
   :type  'boolean
   :group 'bison)
 
+;;;  Lexical regexps
+
+(defconst bison--word-constituent-re "\\(\\sw\\|_\\)")
+(defconst bison--production-re  (concat "^" bison--word-constituent-re "+:"))
+
+(defconst bison--c-section-opener "^%{"
+  "Regular expression denoting start of C/C++ code sections.")
+(defconst bison--c-section-closer "^%}"
+  "Regular expression denoting end of C/C++ code sections.")
+(defconst bison--rules-section-delimeter "^%%"
+  "Regular expression denoting start and end of bison grammar rules section.")
+
+(defconst bison--section-open-re
+  (concat "\\(?:"
+          "\\(" bison--c-section-opener "\\)\\|"
+          "\\(" bison--rules-section-delimeter "\\)"
+          "\\)"))
+
+(defconst bison--sections-dfa
+  `((:c-decls-section   ,bison--c-section-closer        :bison-decls-section)
+    (:rules-section     ,bison--rules-section-delimeter :c-code-section)))
+
+;;;  Keywords
+
+(defconst bison--declarers '("%union" "%token" "%type"
+			   "%left" "%right" "%nonassoc")
+  "Commands that can declare a token or state type.")
+
+(defconst bison--directives
+  '("%code"
+    "%debug" "%define" "%defines" "%destructor" "%dprec"
+    "%error-verbose"
+    "%file-prefix"
+    "%glr-parser"
+    "%initial-action"
+    "%language" "%locations" "%lex-param"
+    "%no-lines"
+    "%output"
+    "%param" "%parse-param" "%prec" "%precedence" "%pure-parser"
+    "%require"
+    "%skeleton" "%start"
+    "%token-table")
+
+  "Bison directives, except of those in ‘bison--declarers’.")
+
+(defconst bison-font-lock-keywords
+  (append (list (cons (concat "^\\(" (regexp-opt (append bison--declarers bison--directives)) "\\)")
+                      '(1 font-lock-keyword-face)))
+          c++-font-lock-keywords)
+  "Default expressions to highlight in Bison mode.")
+
 ;;; i know lisp has the dual name spaces, but i find it more aesthetically
 ;;; pleasing to not take advantage of that
 (defvar bison-electric-colon-v t
@@ -190,11 +206,6 @@ key's electric variable."
 (defvar bison-electric-greater-than-v t
   "Non-nil means use an electric greater-than.")
 
-(defconst bison-font-lock-keywords
-  (append (list (cons (concat "^\\(" (regexp-opt (append bison--declarers bison--directives)) "\\)")
-                      '(1 font-lock-keyword-face)))
-          c++-font-lock-keywords)
-  "Default expressions to highlight in Bison mode.")
 
 ;; *************** utilities ***************
 
@@ -263,33 +274,31 @@ key's electric variable."
   (setq font-lock-keywords nil)
   (set (make-local-variable 'font-lock-defaults) '(bison-font-lock-keywords)))
 
-
-;; *************** section parsers ***************
+;;; Section parsers
 
 (defun bison--section ()
   "Return the section that user is currently in."
   (save-excursion
-    (let ((bound (point)))
-      ;; To the beginning of a buffer
-      (goto-char (point-min))
+    (save-match-data
+      (let ((bound (point))
+            (section :init-section))
+        ;; To the beginning of a buffer
+        (goto-char (point-min))
 
-      (if (re-search-forward bison--c-decls-section-opener bound t)
-          (cond
-           ((not (re-search-forward bison--c-decls-section-closer bound t)) :c-decls-section)
-           ((not (re-search-forward bison--grammar-rules-section-delimeter bound t)) :bison-decls-section)
-           ((not (re-search-forward bison--grammar-rules-section-delimeter bound t)) :grammar-rules-section)
-           (t :c-code-section))
-        (if (re-search-forward bison--grammar-rules-section-delimeter bound t)
-            (if (re-search-forward bison--grammar-rules-section-delimeter bound t)
-                :c-code-section
-              :grammar-rules-section)
-          (cond
-           ((re-search-forward bison--c-decls-section-opener nil t)             :init-section)
-           ((re-search-forward bison--grammar-rules-section-delimeter nil t)    :bison-decls-section)
-           (t :init-section))))
-      )))
+        ;; Until there is no section delimiters
+        (while
+            (and (re-search-forward bison--section-open-re bound t)
+                 (let ((state (nth (/ (seq-count 'not (cddr (match-data))) 2) bison--sections-dfa)))
+                   (if (re-search-forward (nth 1 state) bound t)
+                       (setq section (nth 2 state))
 
-;; *************** syntax parsers ***************
+                     (setq section (car state))
+                     nil))
+                 (not (eq section :c-code-section))))
+
+        section))))
+
+;;; Syntax parsers
 
 (defun bison--production-p ()
   "Return t if the \(point\) rests immediately after a production."
@@ -318,12 +327,12 @@ key's electric variable."
 
 (defun bison--find-grammar-end ()
   "Return the position of the end of the grammar rules (assuming we are within the grammar rules section), or nil if there isnt one."
-  (bison--find-point bison--grammar-rules-section-delimeter))
+  (bison--find-point bison--rules-section-delimeter))
 
 (defun bison--find-grammar-begin ()
   "Return the position of the beginning of the grammar rules (assuming we are within the grammar rules section), or nil if there isnt one."
   (save-excursion
-    (if (re-search-backward bison--grammar-rules-section-delimeter nil t)
+    (if (re-search-backward bison--rules-section-delimeter nil t)
 	(point))))
 
 (defun bison--within-started-production-p ()
@@ -397,7 +406,7 @@ either the beginnings of another production or the end of the grammar rules."
 			 (or (search-backward "%}" nil t)
 			     (point-min)))))
 	   (bison--within-braced-c-expression-p-h-h opener low-pt)))
-	((eq section :grammar-rules-section)
+	((eq section :rules-section)
 	 (let ((opener (save-excursion (bison--find-production-opener))))
 	   (if opener
 	       (bison--within-braced-c-expression-p-h-h opener low-pt)
@@ -468,7 +477,7 @@ save excursion is done higher up, so i dont concern myself here.
   "Return t if the \(point\) is within the body of a production.
 This procedure will fail if it is in a production header."
   (save-excursion
-    (and (eq section :grammar-rules-section)
+    (and (eq section :rules-section)
          (re-search-backward bison--production-re nil t)
          t)))
 
@@ -511,7 +520,7 @@ Assumes indenting a new line, i.e. at column 0.
     (cond
      (c-sexp
       (cond
-       ((eq section :grammar-rules-section)
+       ((eq section :rules-section)
 	(c-indent-line
 	 (save-excursion
 	   (forward-line -1)
@@ -530,7 +539,7 @@ Assumes indenting a new line, i.e. at column 0.
       (c-indent-line))
      ((eq section :bison-decls-section)
       (indent-to-column bison-decl-token-column))
-     ((eq section :grammar-rules-section)
+     ((eq section :rules-section)
       (indent-to-column
        (save-excursion
 	 (let* ((bound (or (save-excursion (bison--find-production-opener))
@@ -634,7 +643,7 @@ Assumes indenting a new line, i.e. at column 0.
 		  ;; else do nothing
 		  )
 	    (funcall reset-pt)))))
-       ((eq section :grammar-rules-section)
+       ((eq section :rules-section)
 	(cond
 	 ((bison--production-opener-p bol eol)
 	  (beginning-of-line)
@@ -722,7 +731,7 @@ a word(alphanumerics or '_''s), and there is no previous white space.
   (self-insert-command (prefix-numeric-value arg))
   (if (and bison-electric-colon-v
 	   (not bison-all-electricity-off))
-      (if (and (eq :grammar-rules-section (bison--section))
+      (if (and (eq :rules-section (bison--section))
 	       (bison--production-p)
 	       (not (bison--within-started-production-p)))
 	  (progn
@@ -751,7 +760,7 @@ else just run self-insert-command
 
   (if (and bison-electric-pipe-v
 	   (not bison-all-electricity-off)
-	   (eq :grammar-rules-section (bison--section))
+	   (eq :rules-section (bison--section))
 	   (line-of-whitespace-p))
       (progn
 	(beginning-of-line)
@@ -772,7 +781,7 @@ bison-rule-enumeration-column."
   (if (and bison-electric-open-brace-v
 	   (not bison-all-electricity-off))
       (let ((section (bison--section)))
-	(cond ((and (eq section :grammar-rules-section)
+	(cond ((and (eq section :rules-section)
 		    (not (bison--within-braced-c-expression-p section))
 		    (not (bison--looking-back-non-ws-p)))
 	       (if (not (= (current-column) bison-rule-enumeration-column))
