@@ -129,7 +129,55 @@
   :group 'bison)
 
 ;;;###autoload
-(defcustom bison-all-electricity-off nil
+(defcustom bison-electric-: t
+  "Non-nil means use an electric colon."
+  :type  'boolean
+  :group 'bison)
+
+;;;###autoload
+(defcustom bison-electric-| t
+  "Non-nil means use an electric pipe."
+  :type  'boolean
+  :group 'bison)
+
+;;;###autoload
+(defcustom bison-electric-{ t
+  "Non-nil means use an electric open-brace."
+  :type  'boolean
+  :group 'bison)
+
+;;;###autoload
+(defcustom bison-electric-} t
+  "Non-nil means use an electric close-brace."
+  :type  'boolean
+  :group 'bison)
+
+;;;###autoload
+(defcustom bison-electric-\; t
+  "Non-nil means use an electric semicolon."
+  :type  'boolean
+  :group 'bison)
+
+;;;###autoload
+(defcustom bison-electric-% t
+  "Non-nil means use an electric percent."
+  :type  'boolean
+  :group 'bison)
+
+;;;###autoload
+(defcustom bison-electric-lt t
+  "Non-nil means use an electric less-than."
+  :type  'boolean
+  :group 'bison)
+
+;;;###autoload
+(defcustom bison-electric-gt t
+  "Non-nil means use an electric greater-than."
+  :type  'boolean
+  :group 'bison)
+
+;;;###autoload
+(defcustom bison-electricity-off nil
   "*Disable all ‘bison-mode’ electric keys.
 
 nil means that a bison-electric-* key will be on or off based on the individual
@@ -189,26 +237,6 @@ key's electric variable."
           c++-font-lock-keywords)
   "Default expressions to highlight in Bison mode.")
 
-;;; i know lisp has the dual name spaces, but i find it more aesthetically
-;;; pleasing to not take advantage of that
-(defvar bison-electric-colon-v t
-  "Non-nil means use an electric colon.")
-(defvar bison-electric-pipe-v t
-  "Non-nil means use an electric pipe.")
-(defvar bison-electric-open-brace-v t
-  "Non-nil means use an electric open-brace.")
-(defvar bison-electric-close-brace-v t
-  "Non-nil means use an electric close-brace.")
-(defvar bison-electric-semicolon-v t
-  "Non-nil means use an electric semicolon.")
-(defvar bison-electric-percent-v t
-  "Non-nil means use an electric percent.")
-(defvar bison-electric-less-than-v t
-  "Non-nil means use an electric less-than.")
-(defvar bison-electric-greater-than-v t
-  "Non-nil means use an electric greater-than.")
-
-
 ;; *************** utilities ***************
 
 (defun just-no-space ()
@@ -237,6 +265,8 @@ key's electric variable."
       (beginning-of-line)	;; should already be there anyway
       (not (re-search-forward "[^ \t\n]" eol t)))))
 
+(defun bison--electric-p (c) (and c (not bison-electricity-off)))
+
 ;; *************** bison-mode ***************
 
 ;;;###autoload
@@ -255,14 +285,14 @@ key's electric variable."
 
   (use-local-map bison-mode-map)
 
-  (define-key bison-mode-map ":" 'bison-electric-colon)
-  (define-key bison-mode-map "|" 'bison-electric-pipe)
-  (define-key bison-mode-map "{" 'bison-electric-open-brace)
-  (define-key bison-mode-map "}" 'bison-electric-close-brace)
-  (define-key bison-mode-map ";" 'bison-electric-semicolon)
-  (define-key bison-mode-map "%" 'bison-electric-percent)
-  (define-key bison-mode-map "<" 'bison-electric-less-than)
-  (define-key bison-mode-map ">" 'bison-electric-greater-than)
+  (define-key bison-mode-map ":" 'bison-electric-:)
+  (define-key bison-mode-map "|" 'bison-electric-|)
+  (define-key bison-mode-map "{" 'bison-electric-{)
+  (define-key bison-mode-map "}" 'bison-electric-})
+  (define-key bison-mode-map ";" 'bison-electric-\;)
+  (define-key bison-mode-map "%" 'bison-electric-%)
+  (define-key bison-mode-map "<" 'bison-electric-lt)
+  (define-key bison-mode-map ">" 'bison-electric-gt)
 
   (define-key bison-mode-map [remap c-indent-command] 'bison-indent-line)
 
@@ -712,7 +742,7 @@ Assumes indenting a new line, i.e. at column 0.
 
 ;; *************** electric-functions ***************
 
-(defun bison-electric-colon (arg)
+(defun bison-electric-: (arg)
   "Insert a colon character.
 If the colon <:> delineates a production,
 then insert a semicolon on the next line in the BISON-RULE-SEPARATOR-COLUMN,
@@ -725,8 +755,7 @@ a word(alphanumerics or '_''s), and there is no previous white space.
   (interactive "P")
 
   (self-insert-command (prefix-numeric-value arg))
-  (if (and bison-electric-colon-v
-	   (not bison-all-electricity-off))
+  (when (bison--electric-p bison-electric-:)
       (if (and (eq :rules-section (bison--section))
 	       (bison--production-p)
 	       (not (bison--within-started-production-p)))
@@ -745,7 +774,7 @@ a word(alphanumerics or '_''s), and there is no previous white space.
 		(newline))
 	    (indent-to-column bison-rule-enumeration-column)))))
 
-(defun bison-electric-pipe (arg)
+(defun bison-electric-| (arg)
   "Insert a \"|\" character.
 If the pipe <|> is used as a rule separator within a production,
 then move it into BISON-RULE-SEPARATOR-COLUMN
@@ -754,8 +783,7 @@ else just run self-insert-command
 "
   (interactive "P")
 
-  (if (and bison-electric-pipe-v
-	   (not bison-all-electricity-off)
+  (if (and (bison--electric-p bison-electric-|)
 	   (eq :rules-section (bison--section))
 	   (line-of-whitespace-p))
       (progn
@@ -767,15 +795,14 @@ else just run self-insert-command
 
     (self-insert-command (prefix-numeric-value arg))))
 
-(defun bison-electric-open-brace (arg)
+(defun bison-electric-{ (arg)
   "Insert and opening brace \"{\".
 When the brace opens a C action definition for production rules,
 if there is only whitespace before \(point\), then put open-brace in
 bison-rule-enumeration-column."
   (interactive "P")
 
-  (if (and bison-electric-open-brace-v
-	   (not bison-all-electricity-off))
+  (when (bison--electric-p bison-electric-{)
       (let ((section (bison--section)))
 	(cond ((and (eq section :rules-section)
 		    (not (bison--within-braced-c-expression-p section))
@@ -795,15 +822,14 @@ bison-rule-enumeration-column."
   (self-insert-command (prefix-numeric-value arg)))
 
 
-(defun bison-electric-close-brace (arg)
+(defun bison-electric-} (arg)
   "If the close-brace \"}\" is used as the c-declarations section closer
 in \"%}\", then make sure the \"%}\" indents to the beginning of the line"
   (interactive "P")
 
   (self-insert-command (prefix-numeric-value arg))
 
-  (if (and bison-electric-close-brace-v
-	   (not bison-all-electricity-off))
+  (when (bison--electric-p bison-electric-})
       (cond ((search-backward "%}" (- (point) 2) t)
 	     (if (eq (bison--section) :c-decls-section)
 		 (progn
@@ -812,7 +838,7 @@ in \"%}\", then make sure the \"%}\" indents to the beginning of the line"
 	       (forward-char 1)))
 	    )))
 
-(defun bison-electric-semicolon (arg)
+(defun bison-electric-\; (arg)
   "if the semicolon is used to end a production, then place it in
 bison-rule-separator-column
 
@@ -820,19 +846,18 @@ a semicolon is deemed to be used for ending a production if it is not found
 within braces
 
 this is just self-insert-command as i have yet to write the actual
-bison-electric-semicolon function yet
+bison-electric-\; function yet
 "
   (interactive "P")
 
   (self-insert-command (prefix-numeric-value arg)))
 
-(defun bison-electric-percent (arg)
+(defun bison-electric-% (arg)
   "If the percent is a declarer in the bison declaration's section,
 then put it in the 0 column."
   (interactive "P")
 
-  (if (and bison-electric-percent-v
-	   (not bison-all-electricity-off))
+  (when (bison--electric-p bison-electric-%)
       (let ((section (bison--section)))
 	(if (and (eq section :bison-decls-section)
 		 (not (bison--within-braced-c-expression-p section))
@@ -842,13 +867,12 @@ then put it in the 0 column."
 
   (self-insert-command (prefix-numeric-value arg)))
 
-(defun bison-electric-less-than (arg)
+(defun bison-electric-lt (arg)
   "If the less-than is a type declarer opener for tokens in the bison
 declaration section, then put it in the bison-decl-type-column column."
   (interactive "P")
 
-  (if (and bison-electric-less-than-v
-	   (not bison-all-electricity-off))
+  (when (bison--electric-p bison-electric-lt)
       (if (and (eq (bison--section) :bison-decls-section)
 	       (bison--bison-decl-opener-p
 		(save-excursion (beginning-of-line) (point))
@@ -859,15 +883,14 @@ declaration section, then put it in the bison-decl-type-column column."
 
   (self-insert-command (prefix-numeric-value arg)))
 
-(defun bison-electric-greater-than (arg)
+(defun bison-electric-gt (arg)
   "If the greater-than is a type declarer closer for tokens in the bison
 declaration section, then indent to bison-decl-token-column."
   (interactive "P")
 
   (self-insert-command (prefix-numeric-value arg))
 
-  (if (and bison-electric-greater-than-v
-	   (not bison-all-electricity-off))
+  (when (bison--electric-p bison-electric-gt)
       (let ((current-pt (point))
 	    (bol (save-excursion (beginning-of-line) (point))))
 	(if (and (eq (bison--section) :bison-decls-section)
