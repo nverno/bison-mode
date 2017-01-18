@@ -189,7 +189,7 @@ key's electric variable."
 
 (defconst bison--word-constituent-re "\\(?:\\sw\\|_\\)")
 (defconst bison--production-re  (concat "^" bison--word-constituent-re "+:"))
-(defconst bison--action-re  (concat "\\s-+\\(" bison--word-constituent-re "+\\|/[*]\\s-*empty\\s-*[*]/\\|'.'\\|\"[^\"]+\"\\)"))
+(defconst bison--action-re  (concat "\\s-*\\(" bison--word-constituent-re "+\\|/[*]\\s-*empty\\s-*[*]/\\|'.'\\|\"[^\"]+\"\\)"))
 
 (defconst bison--c-section-opener "^%{"
   "Regular expression denoting start of C/C++ code sections.")
@@ -222,7 +222,7 @@ key's electric variable."
     "%glr-parser"
     "%initial-action"
     "%language" "%locations" "%lex-param"
-    "%no-lines"
+    "%no-lines" "%name-prefix"
     "%output"
     "%param" "%parse-param" "%prec" "%precedence" "%pure-parser"
     "%require"
@@ -588,6 +588,20 @@ Assumes indenting a new line, i.e. at column 0.
      ((eq section :c-code-section)) ;;leave-alone
      )))
 
+(defun bison--indent-action ()
+  (when (looking-at bison--action-re)
+    (if (> (current-column) bison-rule-enumeration-column)
+        (progn
+          (just-no-space)
+          (newline)
+          (indent-to-column bison-rule-enumeration-column))
+      (save-excursion
+        ;; Here the match data from looking at bison--action-re
+        (goto-char (nth 2 (match-data)))
+        (when (> (current-column) bison-rule-enumeration-column)
+          (just-no-space))
+        (indent-to-column bison-rule-enumeration-column)))))
+
 (defun bison-indent-line ()
   "Indent a line of bison code."
   (interactive)
@@ -678,18 +692,7 @@ Assumes indenting a new line, i.e. at column 0.
 	 ((bison--production-opener-p bol eol)
 	  (beginning-of-line)
 	  (re-search-forward bison--production-re);; SIGERR
-	  (when (looking-at bison--action-re)
-            (if (> (current-column) bison-rule-enumeration-column)
-                (progn
-                  (just-no-space)
-                  (newline)
-                  (indent-to-column bison-rule-enumeration-column))
-              (save-excursion
-                ;; Here the match data from looking at bison--action-re
-                (goto-char (nth 2 (match-data)))
-                (when (> (current-column) bison-rule-enumeration-column)
-                  (just-no-space))
-                (indent-to-column bison-rule-enumeration-column))))
+          (bison--indent-action)
 	  (funcall reset-pt))
 
 	 ((bison--production-alternative-p bol eol section)
@@ -699,19 +702,9 @@ Assumes indenting a new line, i.e. at column 0.
 		(just-no-space)
 		(indent-to-column bison-rule-separator-column)))
 	  (forward-char 1)
-	  (if (bison--looking-at-non-ws-p)
-	      (save-excursion
-		(re-search-forward bison--word-constituent-re);; SIGERR
-		(let ((col (current-column)))
-		  (cond ((> col (+ 1 bison-rule-enumeration-column))
-			 (forward-char -1)
-			 (just-no-space)
-			 (indent-to-column bison-rule-enumeration-column))
-			((< col (+ 1 bison-rule-enumeration-column))
-			 (forward-char -1)
-			 (indent-to-column
-			  bison-rule-enumeration-column))))))
+          (bison--indent-action)
 	  (funcall reset-pt))
+
 	 (c-sexp
 	  (bison--handle-indent-c-sexp
 	   section bison-rule-enumeration-column bol)
