@@ -314,21 +314,23 @@ key's electric variable."
     (save-match-data
       (let ((bound (point))
             (section :init-section))
-        ;; To the beginning of a buffer
-        (goto-char (point-min))
+        (save-restriction
+          (widen)
+          ;; To the beginning of a buffer
+          (goto-char (point-min))
 
-        ;; Until there is no section delimiters
-        (while
-            (and (re-search-forward bison--section-open-re bound t)
-                 (let ((state (nth (/ (seq-count 'not (cddr (match-data))) 2) bison--sections-dfa)))
-                   (if (re-search-forward (nth 1 state) bound t)
-                       (setq section (nth 2 state))
+          ;; Until there is no section delimiters
+          (while
+              (and (re-search-forward bison--section-open-re bound t)
+                   (let ((state (nth (/ (seq-count 'not (cddr (match-data))) 2) bison--sections-dfa)))
+                     (if (re-search-forward (nth 1 state) bound t)
+                         (setq section (nth 2 state))
 
-                     (setq section (car state))
-                     nil))
-                 (not (eq section :c-code-section))))
+                       (setq section (car state))
+                       nil))
+                   (not (eq section :c-code-section))))
 
-        section))))
+          section)))))
 
 ;;; Syntax parsers
 
