@@ -495,7 +495,7 @@ this procedure will fail if it is in a production header"
 alternative"
   (save-excursion
     (goto-char bol)
-    (if (search-forward "|" eol t)
+    (if (re-search-forward "[:|]" eol t)
 	(not (bison--within-braced-c-expression-p section))
       nil)))
 
