@@ -197,44 +197,55 @@ and \(point\)"
       (beginning-of-line)	;; should already be there anyway
       (not (re-search-forward "[^ \t\n]" eol t)))))
 
+;; -------------------------------------------------------------------
+;;; Commands
+
+(defun bison-next-section ()
+  (interactive)
+  (re-search-forward "%[%}{]" nil 'move))
+
+(defun bison-previous-section ()
+  (interactive)
+  (re-search-backward "%[%}{]" nil 'move))
+
 ;; *************** bison-mode ***************
+
+(defvar bison-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map ":" 'bison-electric-colon)
+    (define-key map "|" 'bison-electric-pipe)
+    (define-key map "{" 'bison-electric-open-brace)
+    (define-key map "}" 'bison-electric-close-brace)
+    (define-key map ";" 'bison-electric-semicolon)
+    (define-key map "%" 'bison-electric-percent)
+    (define-key map "<" 'bison-electric-less-than)
+    (define-key map ">" 'bison-electric-greater-than)
+    (define-key map [tab] 'bison-indent-line)
+    (define-key map "M-s-n" 'bison-next-section)
+    (define-key map "M-s-p" 'bison-previos-section)
+    map))
 
 ;;;###autoload
 (define-derived-mode bison-mode c-mode "Bison"
-  "Major mode for editing bison/yacc files."
+  "Major mode for editing bison/yacc files.\n
+
+\\{bison-mode-map}"
 
   ;; try to set the indentation correctly
   (setq c-basic-offset 4)
-
   (c-set-offset 'knr-argdecl-intro 0)
   
   ;; remove auto and hungry anything
   (c-toggle-auto-hungry-state -1)
   (c-toggle-auto-newline -1)
   (c-toggle-hungry-state -1)
-
-  (use-local-map bison-mode-map)
   
-  (define-key bison-mode-map ":" 'bison-electric-colon)
-  (define-key bison-mode-map "|" 'bison-electric-pipe)
-  (define-key bison-mode-map "{" 'bison-electric-open-brace)
-  (define-key bison-mode-map "}" 'bison-electric-close-brace)
-  (define-key bison-mode-map ";" 'bison-electric-semicolon)
-  (define-key bison-mode-map "%" 'bison-electric-percent)
-  (define-key bison-mode-map "<" 'bison-electric-less-than)
-  (define-key bison-mode-map ">" 'bison-electric-greater-than)
-
-  (define-key bison-mode-map [tab] 'bison-indent-line)
-
-  (make-local-variable 'indent-line-function)
-  (setq indent-line-function 'bison-indent-new-line)
-  (make-local-variable 'comment-start)
-  (make-local-variable 'comment-end)
-  (setq comment-start "/*"
-	comment-end "*/")
-  (make-local-variable 'font-lock-keywords)
-  (setq font-lock-keywords nil)
-  (set (make-local-variable 'font-lock-defaults) '(bison-font-lock-keywords)))
+  (setq imenu-create-index-function 'imenu-default-create-index-function)
+  (setq-local indent-line-function 'bison-indent-new-line)
+  (setq-local comment-start "/* ")
+  (setq-local comment-end " */")
+  (setq-local font-lock-keywords nil)
+  (setq-local font-lock-defaults '(bison-font-lock-keywords)))
 
 
 ;; *************** section parsers ***************
