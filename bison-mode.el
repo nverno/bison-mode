@@ -154,6 +154,13 @@ key's electric variable")
    c-font-lock-keywords)
   "Default expressions to highlight in Bison mode")
 
+;;; Imenu
+(defvar bison-imenu-regex
+  (append 
+   '((nil "^\\([a-zA-Z_]+\\)\\s-*\\(:\\|$\\)" 1)
+     ("Options" "^%\\([a-z-]+\\)" 1))
+   cc-imenu-c-generic-expression))
+
 ;; *************** utilities ***************
 
 (defun just-no-space ()
@@ -212,17 +219,17 @@ and \(point\)"
 
 (defvar bison-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map ":" 'bison-electric-colon)
-    (define-key map "|" 'bison-electric-pipe)
-    (define-key map "{" 'bison-electric-open-brace)
-    (define-key map "}" 'bison-electric-close-brace)
-    (define-key map ";" 'bison-electric-semicolon)
-    (define-key map "%" 'bison-electric-percent)
-    (define-key map "<" 'bison-electric-less-than)
-    (define-key map ">" 'bison-electric-greater-than)
-    (define-key map [tab] 'bison-indent-line)
-    (define-key map "M-s-n" 'bison-next-section)
-    (define-key map "M-s-p" 'bison-previos-section)
+    (define-key map ":"           'bison-electric-colon)
+    (define-key map "|"           'bison-electric-pipe)
+    (define-key map "{"           'bison-electric-open-brace)
+    (define-key map "}"           'bison-electric-close-brace)
+    (define-key map ";"           'bison-electric-semicolon)
+    (define-key map "%"           'bison-electric-percent)
+    (define-key map "<"           'bison-electric-less-than)
+    (define-key map ">"           'bison-electric-greater-than)
+    (define-key map [tab]         'bison-indent-line)
+    (define-key map (kbd "M-s-n") 'bison-next-section)
+    (define-key map (kbd "M-s-p") 'bison-previous-section)
     map))
 
 ;;;###autoload
@@ -239,8 +246,9 @@ and \(point\)"
   (c-toggle-auto-hungry-state -1)
   (c-toggle-auto-newline -1)
   (c-toggle-hungry-state -1)
-  
+
   (setq imenu-create-index-function 'imenu-default-create-index-function)
+  (setq imenu-generic-expression bison-imenu-regex)
   (setq-local indent-line-function 'bison-indent-new-line)
   (setq-local comment-start "/* ")
   (setq-local comment-end " */")
