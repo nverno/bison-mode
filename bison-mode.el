@@ -225,7 +225,7 @@ and \(point\)"
   (define-key bison-mode-map ">" 'bison-electric-greater-than)
 
   (define-key bison-mode-map [tab] 'bison-indent-line)
-  
+
   (make-local-variable 'indent-line-function)
   (setq indent-line-function 'bison-indent-new-line)
   (make-local-variable 'comment-start)
