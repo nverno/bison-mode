@@ -242,6 +242,8 @@ and \(point\)"
   (setq c-basic-offset 4)
   (c-set-offset 'knr-argdecl-intro 0)
   
+  (c-toggle-electric-state -1)
+
   ;; remove auto and hungry anything
   (c-toggle-auto-hungry-state -1)
   (c-toggle-auto-newline -1)
