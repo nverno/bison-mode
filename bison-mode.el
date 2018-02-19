@@ -86,7 +86,22 @@
 			   "%left" "%right" "%nonassoc")
   "commands which can declare a token or state type")
 
-(defvar bison--word-constituent-re "\\(\\sw\\|_\\)")
+(defconst bison--directives
+  '("%code"
+    "%debug" "%define" "%defines" "%destructor" "%dprec"
+    "%error-verbose"
+    "%file-prefix"
+    "%glr-parser"
+    "%initial-action"
+    "%language" "%locations" "%lex-param"
+    "%no-lines" "%name-prefix"
+    "%output"
+    "%param" "%parse-param" "%prec" "%precedence" "%pure-parser"
+    "%require"
+    "%skeleton" "%start"
+    "%token-table")
+
+  (defvar bison--word-constituent-re "\\(\\sw\\|_\\)")
 (defvar bison--production-re
   (concat "^" bison--word-constituent-re "+:"))
 
@@ -145,20 +160,24 @@ key's electric variable")
 
 
 (defconst bison-font-lock-keywords
-  (append
-   (list
-    (cons (concat "^\\(" (regexp-opt bison--declarers) "\\)")
-	  '(1 font-lock-keyword-face))
-    )
-   c-font-lock-keywords)
+  (eval-when-compile
+    (append
+     (list
+      (cons (concat "^\\("
+                    (regexp-opt (append bison--directives bison--declarers))
+                    "\\)")
+	    '(1 font-lock-keyword-face))
+      )
+     c-font-lock-keywords))
   "Default expressions to highlight in Bison mode")
 
 ;;; Imenu
 (defvar bison-imenu-regex
-  (append 
-   '((nil "^\\([a-zA-Z_]+\\)\\s-*\\(:\\|$\\)" 1)
-     ("Options" "^%\\([a-z-]+\\)" 1))
-   cc-imenu-c-generic-expression))
+  (eval-when-compile
+    (append 
+     '((nil "^\\([a-zA-Z_]+\\)\\s-*\\(:\\|$\\)" 1)
+       ("Options" "^%\\([a-z-]+\\)" 1))
+     cc-imenu-c-generic-expression)))
 
 ;; *************** utilities ***************
 
