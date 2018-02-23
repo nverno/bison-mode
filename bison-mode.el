@@ -99,9 +99,9 @@
     "%param" "%parse-param" "%prec" "%precedence" "%pure-parser"
     "%require"
     "%skeleton" "%start"
-    "%token-table")
+    "%token-table"))
 
-  (defvar bison--word-constituent-re "\\(\\sw\\|_\\)")
+(defvar bison--word-constituent-re "\\(\\sw\\|_\\)")
 (defvar bison--production-re
   (concat "^" bison--word-constituent-re "+:"))
 
@@ -204,8 +204,8 @@ and \(point\)"
   (save-excursion
     (let ((current-point (point)))
       (beginning-of-line)
-    (re-search-forward "[^ \t]" current-point t)
-    )))
+      (re-search-forward "[^ \t]" current-point t)
+      )))
 
 (defun following-non-ws-p ()
   "return t if there are non-whitespace characters on the line"
@@ -290,8 +290,8 @@ and \(point\)"
        (concat "^" bison--c-decls-section-opener)
        bound t)
       (if (re-search-forward
-		(concat "^" bison--c-decls-section-closer)
-		bound t)
+	   (concat "^" bison--c-decls-section-closer)
+	   bound t)
 	  (if (re-search-forward
 	       (concat "^" bison--grammar-rules-section-delimeter)
 	       bound t)
@@ -303,8 +303,8 @@ and \(point\)"
 	    bison--bison-decls-section)
 	bison--c-decls-section)
     (if (re-search-forward
-	    (concat "^" bison--grammar-rules-section-delimeter)
-	    bound t)
+	 (concat "^" bison--grammar-rules-section-delimeter)
+	 bound t)
 	(if (re-search-forward
 	     (concat "^" bison--grammar-rules-section-delimeter)
 	     bound t)
@@ -337,7 +337,7 @@ and \(point\)"
 (defun bison--find-production-opener ()
   "return and goto the point of the nearest production opener above \(point\)"
   (re-search-backward bison--production-re nil t))
-  
+
 
 (defun bison--find-next-production ()
   "return the position of the beginning of the next production,
@@ -384,7 +384,7 @@ either the beginnings of another production or the end of the grammar rules"
       (if bound
 	  (let ((sval (re-search-forward
 		       (concat "\\(\\s \\|" ;; whitespace or
-					    ;; comments
+			       ;; comments
 			       (regexp-quote comment-start)
 			       "\\(.\\|\n\\)*" ;; comment body
 			       (regexp-quote comment-end)
@@ -410,7 +410,7 @@ ENDER"
   "return t if the point is within a c comment delimited by \"/*\" \"*/\""
   (bison--within-some-sexp-p (regexp-quote comment-start)
 			     (regexp-quote comment-end)))
-	   
+
 
 (defun bison--within-string-p (&optional point)
   "
@@ -425,7 +425,7 @@ found."
 	(setq in-p (not in-p)))
 
       in-p)))
-       
+
 ;;; bison--within-braced-c-expression-p
 ;;; new and improved, no more recursion, does not break when literal strings
 ;;; contain un-matched braces
@@ -468,7 +468,7 @@ save excursion is done higher up, so i dont concern myself here.
       ;; loop until open brace found, that is not in comment or string literal
       (while (and (not done)
 		  (re-search-backward "[^%]{" high-pt t count)) ;find nearest
-							        ;starter
+                                        ;starter
 	(goto-char (match-end 0))
 	(if (or (bison--within-c-comment-p)
 		(bison--within-string-p))
@@ -588,7 +588,7 @@ assumes indenting a new line, i.e. at column 0
 			  (- (re-search-forward "[^ \t]") ; SIGERR
 			     1))))
 	       nil)))))
-      (t (c-indent-line))))
+       (t (c-indent-line))))
      ((= section bison--pre-c-decls-section)
       (c-indent-line))
      ((= section bison--bison-decls-section)
@@ -768,7 +768,7 @@ assumes indenting a new line, i.e. at column 0
        ((= section bison--c-code-section)
 	(c-indent-line))
        ))))
-  
+
 ;; *************** electric-functions ***************
 
 (defun bison-electric-colon (arg)
@@ -824,7 +824,7 @@ a word(alphanumerics or '_''s), and there is no previous white space.
 	(indent-to-column bison-rule-enumeration-column)
 	)
     (self-insert-command (prefix-numeric-value arg))))
-	
+
 (defun bison-electric-open-brace (arg)
   "used for the opening brace of a C action definition for production rules,
 if there is only whitespace before \(point\), then put open-brace in
@@ -850,8 +850,8 @@ bison-rule-enumeration-column"
 		     (indent-to-column 0)))))))
 
   (self-insert-command (prefix-numeric-value arg)))
-    
-  
+
+
 (defun bison-electric-close-brace (arg)
   "If the close-brace \"}\" is used as the c-declarations section closer
 in \"%}\", then make sure the \"%}\" indents to the beginning of the line"
