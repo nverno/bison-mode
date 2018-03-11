@@ -81,25 +81,25 @@
 (add-to-list 'auto-mode-alist '("\\.jison\\'" . jison-mode))
 
 ;; *************** internal vars ***************
+(eval-and-compile 
+  (defvar bison--declarers '("%union" "%token" "%type"
+			     "%left" "%right" "%nonassoc")
+    "commands which can declare a token or state type")
 
-(defvar bison--declarers '("%union" "%token" "%type"
-			   "%left" "%right" "%nonassoc")
-  "commands which can declare a token or state type")
-
-(defconst bison--directives
-  '("%code"
-    "%debug" "%define" "%defines" "%destructor" "%dprec"
-    "%error-verbose"
-    "%file-prefix"
-    "%glr-parser"
-    "%initial-action"
-    "%language" "%locations" "%lex-param"
-    "%no-lines" "%name-prefix"
-    "%output"
-    "%param" "%parse-param" "%prec" "%precedence" "%pure-parser"
-    "%require"
-    "%skeleton" "%start"
-    "%token-table"))
+  (defconst bison--directives
+    '("%code"
+      "%debug" "%define" "%defines" "%destructor" "%dprec"
+      "%error-verbose"
+      "%file-prefix"
+      "%glr-parser"
+      "%initial-action"
+      "%language" "%locations" "%lex-param"
+      "%no-lines" "%name-prefix"
+      "%output"
+      "%param" "%parse-param" "%prec" "%precedence" "%pure-parser"
+      "%require"
+      "%skeleton" "%start"
+      "%token-table")))
 
 (defvar bison--word-constituent-re "\\(\\sw\\|_\\)")
 (defvar bison--production-re
