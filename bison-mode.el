@@ -102,13 +102,12 @@
       "%token-table")))
 
 (defvar bison--word-constituent-re "\\(\\sw\\|_\\)")
-(defvar bison--production-re
-  (concat "^" bison--word-constituent-re "+:"))
+(defvar bison--production-re (concat "^" bison--word-constituent-re "+:"))
 
 (defvar bison--pre-c-decls-section 0
   "section before c-declarations-section, if that section exists")
 (defvar bison--c-decls-section 1
-  "section denoted by %{ and $} for c-declarations at the top of a bison file")
+  "section denoted by %{ and %} for c-declarations at the top of a bison file")
 (defvar bison--bison-decls-section 2
   "section before the rules section")
 (defvar bison--grammar-rules-section 3
@@ -159,23 +158,23 @@ key's electric variable")
   "non-nil means use an electric greater-than")
 
 
+;;; FIXME: wrong ordering of font-locking, various bison decls don't get
+;;; highlighted, and c keywords are highlighted when part of other words
 (defconst bison-font-lock-keywords
   (eval-when-compile
     (append
-     (list
-      (cons (concat "^\\("
-                    (regexp-opt (append bison--directives bison--declarers))
-                    "\\)")
-	    '(1 font-lock-keyword-face))
-      )
-     c-font-lock-keywords))
+     (cons (concat "^\\s-*\\("
+                   (regexp-opt (append bison--directives bison--declarers))
+                   "\\)")
+	   '(1 font-lock-keyword-face))
+          c-font-lock-keywords))
   "Default expressions to highlight in Bison mode")
 
 ;;; Imenu
 (defvar bison-imenu-regex
   (eval-when-compile
     (append 
-     '((nil "^\\([a-zA-Z_]+\\)\\s-*\\(:\\|$\\)" 1)
+     '((nil "^\\s-*\\([a-zA-Z_]+\\)\\s-*\\(:\\|$\\)" 1)
        ("Options" "^%\\([a-z-]+\\)" 1))
      cc-imenu-c-generic-expression)))
 
@@ -204,16 +203,14 @@ and \(point\)"
   (save-excursion
     (let ((current-point (point)))
       (beginning-of-line)
-      (re-search-forward "[^ \t]" current-point t)
-      )))
+      (re-search-forward "[^ \t]" current-point t))))
 
 (defun following-non-ws-p ()
   "return t if there are non-whitespace characters on the line"
   (save-excursion
     (let ((current-point (point)))
       (end-of-line)
-      (re-search-backward "[^ \t]+" current-point t)
-      )))
+      (re-search-backward "[^ \t]+" current-point t))))
 
 (defun line-of-whitespace-p ()
   "return t if the line consists of nothiing but whitespace, nil otherwise"
@@ -272,8 +269,9 @@ and \(point\)"
   (setq-local indent-line-function 'bison-indent-new-line)
   (setq-local comment-start "/* ")
   (setq-local comment-end " */")
-  (setq-local font-lock-keywords nil)
-  (setq-local font-lock-defaults '(bison-font-lock-keywords)))
+  ;; (setq-local font-lock-keywords nil)
+  ;; (setq-local font-lock-defaults '(bison-font-lock-keywords))
+  )
 
 
 ;; *************** section parsers ***************
@@ -324,7 +322,7 @@ and \(point\)"
 ;; *************** syntax parsers ***************
 
 (defun bison--production-p ()
-  "return t if the \(point\) rests immediately after a production"
+  "Return non-nil if the \(point\) rests immediately after a production."
   (save-excursion
     (let ((current-point (point)))
       (beginning-of-line)
@@ -335,13 +333,13 @@ and \(point\)"
 	     (= position current-point))))))
 
 (defun bison--find-production-opener ()
-  "return and goto the point of the nearest production opener above \(point\)"
+  "Return and goto the point of the nearest production opener above \(point\)."
   (re-search-backward bison--production-re nil t))
 
 
 (defun bison--find-next-production ()
-  "return the position of the beginning of the next production,
-or nil if there isnt one"
+  "Return the position of the beginning of the next production,
+or nil if there isnt one."
   (save-excursion
     (if (re-search-forward bison--production-re nil t)
 	(progn
@@ -350,8 +348,8 @@ or nil if there isnt one"
       nil)))
 
 (defun bison--find-grammar-end ()
-  "return the position of the end of the grammar rules (assuming we are within
-the grammar rules section), or nil if there isnt one"
+  "Return the position of the end of the grammar rules (assuming we are within
+the grammar rules section), or nil if there isn't one."
   (save-excursion
     (if (re-search-forward
 	 (concat "^" bison--grammar-rules-section-delimeter)
@@ -362,8 +360,8 @@ the grammar rules section), or nil if there isnt one"
       nil)))
 
 (defun bison--find-grammar-begin ()
-  "return the position of the beginning of the grammar rules (assuming we are
-within the grammar rules section), or nil if there isnt one"
+  "Return the position of the beginning of the grammar rules (assuming we are
+within the grammar rules section), or nil if there isnt one."
   (save-excursion
     (if (re-search-backward
 	 (concat "^" bison--grammar-rules-section-delimeter)
@@ -372,11 +370,11 @@ within the grammar rules section), or nil if there isnt one"
       nil)))
 
 (defun bison--within-started-production-p ()
-  "is used by bison-electric-* functions to determine actions
-return t if within a production, nil if not
+  "Used by bison-electric-* functions to determine actions
+Returns non-nil if within a production, nil if not
 
-a point is within a production if there is some non whitespace text before
-either the beginnings of another production or the end of the grammar rules"
+A point is within a production if there is some non whitespace text before
+either the beginnings of another production or the end of the grammar rules."
   (save-excursion
     (let ((bound (cond ((bison--find-next-production))
 		       ((bison--find-grammar-end))
@@ -407,15 +405,14 @@ ENDER"
 	    (not (re-search-forward ender current-point t)))))))
 
 (defun bison--within-c-comment-p ()
-  "return t if the point is within a c comment delimited by \"/*\" \"*/\""
+  "Return non-nil if the point is within a c comment delimited by \"/*\" \"*/\"."
   (bison--within-some-sexp-p (regexp-quote comment-start)
 			     (regexp-quote comment-end)))
 
 
 (defun bison--within-string-p (&optional point)
-  "
-start from the beginning of the buffer and toggle state as un-escaped \"'s are
-found."
+  "Start from the beginning of the buffer and toggle state as un-escaped \"'s \
+are found."
   (let ((point (or point (point)))
 	(in-p nil))
     (save-excursion
@@ -430,8 +427,7 @@ found."
 ;;; new and improved, no more recursion, does not break when literal strings
 ;;; contain un-matched braces
 (defun bison--within-braced-c-expression-p (section)
-  "return t if the point is within an sexp delimited by braces \({,}\)
-"
+  "Return non-nil if the point is within an sexp delimited by braces \({,}\)."
   (save-excursion
     (bison--within-braced-c-expression-p-h section (point))))
 
@@ -542,8 +538,7 @@ alternative"
 ;; *************** indent functions ***************
 
 (defun bison--handle-indent-c-sexp (section indent-column bol)
-  (let* ((o-brace (re-search-backward "[^%]{" bol t))
-	 )
+  (let* ((o-brace (re-search-backward "[^%]{" bol t)))
     (if o-brace
 	(if (save-excursion
 	      (goto-char o-brace)
@@ -563,14 +558,11 @@ alternative"
 
 (defun bison-indent-new-line (&optional c-sexp)
   "Indent a fresh line of bison code
-
-assumes indenting a new line, i.e. at column 0
-"
+assumes indenting a new line, i.e. at column 0."
   (interactive)
 
   (let* ((section (bison--section-p))
-	 (c-sexp (or c-sexp (bison--within-braced-c-expression-p section)))
-	 )
+	 (c-sexp (or c-sexp (bison--within-braced-c-expression-p section))))
     (cond
      (c-sexp
       (cond
@@ -585,7 +577,7 @@ assumes indenting a new line, i.e. at column 0
 		  (cons 'defun-block-intro
 			(progn
 			  (re-search-forward bison--production-re) ; SIGERR
-			  (- (re-search-forward "[^ \t]") ; SIGERR
+			  (- (re-search-forward "[^ \t]")          ; SIGERR
 			     1))))
 	       nil)))))
        (t (c-indent-line))))
